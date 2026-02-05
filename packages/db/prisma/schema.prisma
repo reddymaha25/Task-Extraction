@@ -1,0 +1,195 @@
+// Prisma schema for task extraction platform
+// Optimized for Copilot: Well-documented with clear relationships
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Run and Document Models ====================
+
+model Run {
+  id                    String    @id @default(uuid())
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  createdBy             String?   // User ID (optional for POC)
+  
+  // Input metadata
+  inputType             String    // TEXT | PDF | DOCX | EML | WEBHOOK
+  sourceName            String?   // Filename or webhook source
+  referenceTime         DateTime  @default(now()) // For relative date resolution
+  timezone              String    @default("UTC")
+  
+  // Processing status
+  status                String    // PENDING | PROCESSING | COMPLETE | FAILED
+  llmMode               String    // OPEN_SOURCE | OPENAI | AZURE_OPENAI
+  errorMessage          String?   @db.Text
+  
+  // Summary data (JSON)
+  summaryDecisions      String[]  @default([])
+  summaryRisks          String[]  @default([])
+  summaryAsks           String[]  @default([])
+  summaryKeyPoints      String[]  @default([])
+  
+  // Meeting minutes
+  meetingTitle          String?
+  meetingDate           DateTime?
+  meetingParticipants   String[]  @default([])
+  meetingAgenda         String[]  @default([])
+  meetingNotes          String?   @db.Text
+  meetingNextSteps      String[]  @default([])
+  
+  // Statistics
+  taskCount             Int       @default(0)
+  highConfidenceCount   Int       @default(0)
+  processingDurationMs  Int?
+  llmCallCount          Int?
+  
+  // Relationships
+  documents             Document[]
+  tasks                 Task[]
+  exportArtifacts       ExportArtifact[]
+  
+  @@index([status])
+  @@index([inputType])
+  @@index([createdAt])
+}
+
+model Document {
+  id              String   @id @default(uuid())
+  runId           String
+  createdAt       DateTime @default(now())
+  
+  // File metadata
+  mimeType        String
+  originalName    String
+  storagePath     String   // Path on filesystem
+  sizeBytes       Int
+  contentHash     String   // SHA256 for deduplication
+  
+  // Extracted content
+  extractedText   String?  @db.Text
+  pageCount       Int?
+  
+  // Relationship
+  run             Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  
+  @@index([runId])
+  @@index([contentHash])
+}
+
+// ==================== Task Model ====================
+
+model Task {
+  id                  String   @id @default(uuid())
+  runId               String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Core fields
+  title               String
+  description         String?  @db.Text
+  
+  // Owner information
+  ownerRaw            String?  // As extracted
+  ownerNormalized     String?  // Email or user ID
+  
+  // Due date information
+  dueDateRaw          String?  // As extracted (e.g., "next Friday")
+  dueDateISO          DateTime? // Resolved ISO date
+  
+  // Task metadata
+  priority            String?  // P0 | P1 | P2 | P3
+  status              String   @default("NEW") // NEW | IN_PROGRESS | BLOCKED | DONE | UNKNOWN
+  confidence          Float    @default(0.5) // 0-1 confidence score
+  tags                String[] @default([])
+  
+  // Traceability (REQUIRED)
+  sourceQuote         String   @db.Text // The exact quote from source
+  sourceLocationPage  Int?     // For PDFs
+  sourceLocationSection String?
+  sourceLocationParagraph Int?
+  sourceLocationLine  Int?
+  
+  // Integration state (JSON for flexibility)
+  integrationState    Json     @default("{}")
+  
+  // Relationships
+  run                 Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  syncResults         TaskSyncResult[]
+  
+  @@index([runId])
+  @@index([status])
+  @@index([confidence])
+  @@index([dueDateISO])
+}
+
+// ==================== Integration Models ====================
+
+model IntegrationTarget {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+  
+  // Target configuration
+  name            String   // JIRA | ASANA | PLANNER | CUSTOM_WEBHOOK
+  displayName     String
+  isActive        Boolean  @default(true)
+  
+  // Encrypted configuration (JSON)
+  config          Json     // Varies by integration type
+  
+  // Relationships
+  syncResults     TaskSyncResult[]
+  
+  @@index([name])
+  @@index([isActive])
+}
+
+model TaskSyncResult {
+  id              String   @id @default(uuid())
+  taskId          String
+  targetId        String
+  syncedAt        DateTime @default(now())
+  
+  // Sync status
+  status          String   // SUCCESS | FAILED | SKIPPED
+  externalId      String?  // ID in external system
+  errorMessage    String?  @db.Text
+  
+  // Relationships
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  target          IntegrationTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  
+  @@index([taskId])
+  @@index([targetId])
+  @@index([status])
+}
+
+// ==================== Export Model ====================
+
+model ExportArtifact {
+  id          String   @id @default(uuid())
+  runId       String
+  createdAt   DateTime @default(now())
+  
+  // Export metadata
+  type        String   // XLSX | CSV | JSON
+  path        String   // File path
+  sizeBytes   Int
+  taskCount   Int
+  
+  // Optional expiration
+  expiresAt   DateTime?
+  
+  // Relationship
+  run         Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  
+  @@index([runId])
+  @@index([expiresAt])
+}

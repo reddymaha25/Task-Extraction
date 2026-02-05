@@ -1,0 +1,20 @@
+{
+  "name": "@task-platform/exporters",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@task-platform/shared": "*",
+    "exceljs": "^4.4.0",
+    "csv-stringify": "^6.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.2"
+  }
+}

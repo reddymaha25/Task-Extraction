@@ -1,0 +1,14 @@
+# Exclude these when creating distribution zip
+node_modules/
+.git/
+.env
+uploads/
+exports/
+*.log
+.DS_Store
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vscode/
+.idea/

@@ -1,0 +1,35 @@
+{
+  "name": "@task-platform/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_OPTIONS='--max-old-space-size=4096' tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node --max-old-space-size=4096 dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@task-platform/shared": "*",
+    "@task-platform/db": "*",
+    "@task-platform/parsers": "*",
+    "@task-platform/extraction": "*",
+    "@task-platform/llm-providers": "*",
+    "@task-platform/exporters": "*",
+    "@task-platform/integrations": "*",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.3.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.2"
+  }
+}
