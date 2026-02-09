@@ -1,6 +1,6 @@
 {
-	"agentName": "Task_Extraction_Agent",
-	"secretName": "task_extraction_agent",
+	"agentName": "Task_Extraction_Platform",
+	"secretName": "task_extraction_platform",
 	"owner_mail": "Mahalaxmi.A@quadranttechnologies.com",
 	"ownerName": "Mahalaxmi Anumula",
 	"departName": "Engineering",
