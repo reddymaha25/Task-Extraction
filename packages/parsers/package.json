@@ -10,9 +10,12 @@
   },
   "dependencies": {
     "@task-platform/shared": "*",
+    "canvas": "^3.2.1",
     "mailparser": "^3.6.5",
     "mammoth": "^1.6.0",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^4.0.2",
+    "unpdf": "^1.4.0"
   },
   "devDependencies": {
     "@types/mailparser": "^3.4.6",

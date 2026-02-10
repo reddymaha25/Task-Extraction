@@ -23,23 +23,44 @@ export class DOCXParser implements Parser {
    */
   async parse(buffer: Buffer): Promise<ParsedDocument> {
     try {
+      // Validate buffer
+      if (!buffer || buffer.length === 0) {
+        throw new Error('Empty or invalid buffer provided');
+      }
+
       // Extract plain text
       const textResult = await mammoth.extractRawText({ buffer });
       const text = textResult.value;
+
+      if (!text || text.trim().length === 0) {
+        throw new Error('No text content extracted from DOCX file');
+      }
 
       // Extract with HTML to get structure (headings, etc.)
       const htmlResult = await mammoth.convertToHtml({ buffer });
       const sections = this.extractSections(htmlResult.value, text);
 
+      // Log any warnings from mammoth
+      if (textResult.messages && textResult.messages.length > 0) {
+        console.log('DOCX parsing warnings:', textResult.messages.map(m => m.message).join(', '));
+      }
+
       return {
         text,
         sections: sections.length > 0 ? sections : undefined,
         metadata: {
-          wordCount: text.split(/\s+/).length,
+          wordCount: text.split(/\s+/).filter(w => w.length > 0).length,
         },
       };
     } catch (error: any) {
-      throw new Error(`DOCX parsing failed: ${error.message}`);
+      // Provide more helpful error messages
+      if (error.message.includes('End of central directory record')) {
+        throw new Error('DOCX file is corrupted or not a valid ZIP archive');
+      } else if (error.message.includes('ENOENT')) {
+        throw new Error('DOCX file not found or inaccessible');
+      } else {
+        throw new Error(`DOCX parsing failed: ${error.message}`);
+      }
     }
   }
 
